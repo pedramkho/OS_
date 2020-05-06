@@ -1,38 +1,72 @@
-#include <fcntl.h>
-#include <unistd.h>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <copyfile.h>
-#else
-#include <sys/sendfile.h>
-#endif
+#include<stdio.h>
+#include<stdlib.h>
+#include <string.h>
 
-int OSCopyFile(const char* source, const char* destination)
-{    
-    int input, output;    
-    if ((input = open(source, O_RDONLY)) == -1)
+#define MAX_SIZE 2
+#define MAX_BUF_SIZE 256
+
+int main(int argc, char* argv[])
+{
+    FILE *pFile_src=NULL;
+    FILE *pFile_dest=NULL;
+
+    char* mychar;
+    char *SRC, *DEST;
+    int i=0,j;
+
+    char char_buff[MAX_BUF_SIZE];
+    mychar= (char *)malloc(sizeof(char *));
+
+    if(argv[1]!=NULL)
+        SRC=argv[1];
+    else
+        printf("\nUSAGE: ./Ex_ManualCP_prog src_file dest_file.\nFirst arg should be a filename, cannot be empty.\n");
+
+    if(argv[2]!=NULL)
+        DEST=argv[2];
+    else
+        printf("\nSecond arg should be a filename, cannot be empty.\n");
+
+    mychar= (char *)malloc(MAX_SIZE*sizeof(char *));
+
+    //initialize text buffer
+    for(j=0;j<MAX_BUF_SIZE;j++)
+        char_buff[j]='\0';
+
+    pFile_src=fopen(SRC,"r");     //Open file to read and store in a character buffer
+
+    pFile_dest=fopen(DEST,"w");  //open destination file
+
+    if(pFile_dest==NULL)
+        printf("\nFile specified as Destination DOES NOT EXIST.\n");
+
+    if(pFile_src==NULL)
+        printf("\nFile specified as Source, DOES NOT EXIST.\n");
+    else
     {
-        return -1;
-    }    
-    if ((output = creat(destination, 0660)) == -1)
-    {
-        close(input);
-        return -1;
+        //printf("\n----File opened successfully-----\n");
+
+        while(((*mychar=fgetc(pFile_src))!=EOF))
+        {
+            if(i>=MAX_BUF_SIZE)
+            {
+                i=0;
+            }
+
+            char_buff[i]=*mychar;
+            fputc(char_buff[i],pFile_dest); //write buffer data into opened file
+            ++i;
+        }
+
+        char_buff[i]='\0';
+        fclose(pFile_src);  //close source file
+
     }
 
-    //Here we use kernel-space copying for performance reasons
-#if defined(__APPLE__) || defined(__FreeBSD__)
-    //fcopyfile works on FreeBSD and OS X 10.5+ 
-    int result = fcopyfile(input, output, 0, COPYFILE_ALL);
-#else
-    //sendfile will work with non-socket output (i.e. regular file) on Linux 2.6.33+
-    off_t bytesCopied = 0;
-    struct stat fileinfo = {0};
-    fstat(input, &fileinfo);
-    int result = sendfile(output, input, &bytesCopied, fileinfo.st_size);
-#endif
+    fclose(pFile_dest);
 
-    close(input);
-    close(output);
+    if(pFile_src!=NULL && pFile_dest!=NULL)
+        printf("\n\n-----Copy Done!----\n-----Reached end of file.-----\n");
 
-    return result;
+    return 0;
 }
