@@ -1,0 +1,1 @@
+#include <stdio.h>#include <unistd.h>int main(){int i;for (i = 0; i < 4; i++){	pid_t childPID = fork();	if(childPID < 0){	    perror("fork error!");	}	if(childPID != 0){	    wait(NULL);	}	printf("%d, %p, %d, %d\n", i, &i, getpid(), getppid());	}}
